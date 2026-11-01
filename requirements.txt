@@ -1,0 +1,44 @@
+# GhYiAb V2 - Runtime Dependencies
+# Core
+python-telegram-bot>=22.5,<23
+requests>=2.31,<3
+
+# Database
+sqlalchemy>=2.0,<3
+alembic>=1.13,<2
+asyncpg>=0.29,<1
+aiomysql>=0.2.0,<1
+redis>=5.0,<6
+
+# QR Code (pure Python, optional)
+segno>=1.6,<2
+
+# Payment Gateways
+cryptography>=42,<43
+zeep>=4.2,<5
+defusedxml>=0.7,<1
+
+# Scheduled Jobs
+apscheduler>=3.10,<4
+
+# Exports
+openpyxl>=3.1,<4
+
+# Crypto Payments
+httpx>=0.27,<1
+
+# Configuration
+python-dotenv>=1.0,<2
+pyyaml>=6.0,<7
+
+# Utilities
+python-dateutil>=2.8,<3
+pydantic>=2.8,<3
+pydantic-settings>=2.4,<3
+
+# Logging
+structlog>=24.1,<25
+
+# Health Check
+fastapi>=0.110,<1
+uvicorn>=0.29,<1

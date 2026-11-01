@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Lint / compile
+        run: |
+          python -m compileall -q .
+          python -m pyflakes adapters core providers repository security shared tools bootstrap.py conftest.py
+      - name: Dependency consistency
+        run: python -m pip check
+      - name: Security scan
+        run: python -m tools.security_scan
+      - name: Tests
+        run: python -m pytest -q
+      - name: Fresh-install simulation (schema → healthcheck → backup → app build)
+        env:
+          TELEGRAM_BOT_TOKEN: "123456:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          TELEGRAM_OWNER_ID: "999999"
+          TELEGRAM_CHANNEL_ID: "@ghyiab_ci"
+          GHIYAB_DB_PATH: ${{ runner.temp }}/ci.db
+          GHIYAB_BACKUP_DIR: ${{ runner.temp }}/backups
+          GHIYAB_LOG_DIR: ${{ runner.temp }}/logs
+        run: |
+          mkdir -p "$GHIYAB_BACKUP_DIR" "$GHIYAB_LOG_DIR"
+          python -m tools.init_db
+          python -m tools.healthcheck --strict
+          python -m tools.backup_cli create --db "$GHIYAB_DB_PATH" --dir "$GHIYAB_BACKUP_DIR"
+          python -c "from adapters.telegram_bot.bot import build_application; build_application(); print('app build OK')"

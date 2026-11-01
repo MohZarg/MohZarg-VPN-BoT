@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest tests/test_admin_services_backup.py tests/test_admin_panel.py tests/test_admin_panel_crawl.py tests/test_orders.py tests/test_bot_services_ui.py -q 2>&1 | Select-Object -Last 15)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest tests/test_user_coupon_flow.py tests/test_orders.py -q 2>&1 | Select-Object -Last 8)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m tools.security_scan; \"exit=$LASTEXITCODE\")",
+      "PowerShell(Out-Null *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(foreach \\($f in @\\('deploy/install.ps1','deploy/healthcheck.ps1'\\)\\) { $e=$null; [System.Management.Automation.Language.Parser]::ParseFile\\(\\(Resolve-Path $f\\), [ref]$null, [ref]$e\\) | Out-Null; \"$f errors=\" + $e.Count; $e | ForEach-Object { \"  line $\\($_.Extent.StartLineNumber\\): $\\($_.Message\\)\" } })",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pip install --quiet pyflakes pyyaml 2>&1 | Select-Object -Last 3; .\\\\.venv\\\\Scripts\\\\python.exe -m pyflakes adapters core providers repository security shared tools bootstrap.py conftest.py 2>&1 | Select-Object -First 40; \"pyflakes exit=$LASTEXITCODE\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pyflakes adapters core providers repository security shared tools bootstrap.py conftest.py tests 2>&1 | Select-Object -First 30; \"pyflakes exit=$LASTEXITCODE\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest tests/test_admin_panel.py tests/test_admin_panel_crawl.py tests/test_admin_services_backup.py tests/test_bot_admin_permissions.py tests/test_bot_services_ui.py tests/test_state.py tests/test_orders.py -q 2>&1 | Select-Object -Last 8)",
+      "PowerShell(Tee-Object *)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pip check)",
+      "PowerShell(& powershell -NoProfile -ExecutionPolicy Bypass -File deploy/install.ps1 2>&1 | Select-Object -Last 15; \"install.ps1 exit=$LASTEXITCODE\")"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "services": {
+    "bot": {
+      "dockerfilePath": "Dockerfile",
+      "variables": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "SERVICE_MODE": "bot"
+      }
+    },
+    "worker": {
+      "dockerfilePath": "Dockerfile",
+      "command": "worker",
+      "variables": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "SERVICE_MODE": "worker"
+      }
+    },
+    "health": {
+      "dockerfilePath": "Dockerfile",
+      "command": "health",
+      "variables": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "SERVICE_MODE": "health"
+      }
+    }
+  }
+}

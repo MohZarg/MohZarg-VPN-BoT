@@ -1,0 +1,26 @@
+# /etc/systemd/system/ghyiab-v2.service — ایزوله از 3x-ui (کاربر/دایرکتوری/لاگ/DB جدا)
+[Unit]
+Description=GhYiAb V2 VPN sales bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ghyiab
+Group=ghyiab
+WorkingDirectory=/opt/ghyiab-v2
+EnvironmentFile=/etc/ghyiab-v2/env
+ExecStart=/opt/ghyiab-v2/venv/bin/python -m adapters.telegram_bot.bot
+Restart=on-failure
+RestartSec=5
+# سخت‌سازی (بدون دسترسی به /opt/3x-ui یا /etc/x-ui)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/ghyiab-v2 /var/log/ghyiab-v2
+InaccessiblePaths=/opt/3x-ui /etc/x-ui
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target

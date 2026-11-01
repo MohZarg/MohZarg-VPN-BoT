@@ -1,0 +1,156 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Production)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ghyiab-postgres
+    environment:
+      POSTGRES_DB: ghyiab
+      POSTGRES_USER: ghyiab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghyiab -d ghyiab"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Database (Railway compatible)
+  mysql:
+    image: mysql:8.0
+    container_name: ghyiab-mysql
+    environment:
+      MYSQL_DATABASE: ghyiab
+      MYSQL_USER: ghyiab
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeme}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Adminer for database management
+  adminer:
+    image: adminer:4.8
+    container_name: ghyiab-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+      - mysql
+
+  # Redis for caching/sessions
+  redis:
+    image: redis:7-alpine
+    container_name: ghyiab-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Bot application
+  bot:
+    build:
+      context: ..
+      dockerfile: deploy/railway/Dockerfile
+    container_name: ghyiab-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_OWNER_ID=${TELEGRAM_OWNER_ID}
+      - DATABASE_URL=postgresql://ghyiab:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ghyiab
+      - REDIS_URL=redis://redis:6379/0
+      - VPN_PROVIDER=xui
+      - XUI_BASE_URL=${XUI_BASE_URL}
+      - XUI_USERNAME=${XUI_USERNAME}
+      - XUI_PASSWORD=${XUI_PASSWORD}
+      - LOG_LEVEL=INFO
+      - SERVICE_MODE=bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Worker for background jobs
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/railway/Dockerfile
+    container_name: ghyiab-worker
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_OWNER_ID=${TELEGRAM_OWNER_ID}
+      - DATABASE_URL=postgresql://ghyiab:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ghyiab
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+      - SERVICE_MODE=worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Health check server
+  health:
+    build:
+      context: ..
+      dockerfile: deploy/railway/Dockerfile
+    container_name: ghyiab-health
+    ports:
+      - "8000:8000"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_OWNER_ID=${TELEGRAM_OWNER_ID}
+      - DATABASE_URL=postgresql://ghyiab:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ghyiab
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+      - SERVICE_MODE=health
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Mini App frontend
+  mini-app:
+    build:
+      context: ../mini_app
+      dockerfile: Dockerfile
+    container_name: ghyiab-mini-app
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://bot:8000/api
+    depends_on:
+      - bot
+
+volumes:
+  postgres_data:
+  mysql_data:
+  redis_data:
+
+networks:
+  default:
+    name: ghyiab-network
